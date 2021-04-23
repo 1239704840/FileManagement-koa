@@ -41,6 +41,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+#上传的文件夹
+src/upload/
+
 # TypeScript v1 declaration files
 typings/
 
