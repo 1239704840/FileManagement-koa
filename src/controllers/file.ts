@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-02-28 22:22:33
- * @LastEditTime: 2021-04-20 10:33:11
+ * @LastEditTime: 2021-04-26 15:50:18
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \koa-quickstart\src\controllers\file.ts
@@ -168,7 +168,7 @@ export default class FileController {
       };
     }
   }
-
+//不上传文件，仅更新数据库
   public static async uploadFolder(ctx: Context) {
     //console.log(ctx.request.body)
     // if (!ctx.state.user.isAdmin) {
