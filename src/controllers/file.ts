@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-02-28 22:22:33
- * @LastEditTime: 2021-04-26 15:50:18
+ * @LastEditTime: 2021-05-07 21:01:37
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \koa-quickstart\src\controllers\file.ts
@@ -18,7 +18,9 @@ import send from 'koa-send'
 // import { NotFoundException, ForbiddenException } from '../exceptions';
 // import { Project } from '../entity/project';
 export default class FileController {
+  //上传文件pid为0 的根目录
   public static async uploadFile(ctx: Context) {
+    console.log(ctx.request.body)
     interface ProjectInfo {
       id: string
       project_name: string
@@ -93,7 +95,7 @@ export default class FileController {
       };
     }
   }
-
+  //上传pid存在的文件
   public static async uploadFile2(ctx: Context) {
     interface fileInfo {
       id: string
@@ -168,7 +170,7 @@ export default class FileController {
       };
     }
   }
-//不上传文件，仅更新数据库
+  //不上传文件，仅更新数据库,新建文件夹
   public static async uploadFolder(ctx: Context) {
     //console.log(ctx.request.body)
     // if (!ctx.state.user.isAdmin) {
@@ -190,6 +192,96 @@ export default class FileController {
       ctx.body = {
         message: '失败'
       }
+    }
+  }
+  //上传文件树，上传文件夹
+  public static async uploadFolder2(ctx: Context) {
+    interface ProjectInfo {
+      id: string
+      project_name: string
+      year: string
+      month: string
+      createDate: string
+      'userList[]': string[]
+      isFolder: boolean
+      pid: string
+    }
+
+    //根据文件名区别
+    const file: any = (ctx.request.files as any).file;
+    // 读取文件流
+    const fileReader = fs.createReadStream(file.path);
+    let strs: string[] = file.name.split("/");
+    for (var _i = 0; _i < strs.length; _i++) {
+      //分割后前几部分判断是否有此文件夹，如果没有则在数据库里面创建
+      if (_i < strs.length - 1) {
+        //非最后一位则为文件夹，生成
+        
+      } else {//最后一位，为文件，则修改文件名并上传文件
+        file.name = strs[_i];
+
+      }
+    }
+    //生成实体
+    const projectInfo: ProjectInfo = ctx.request.body
+    if (projectInfo.pid === undefined) {
+      projectInfo.pid = "0";
+    }
+    if (projectInfo.isFolder === undefined) {
+      projectInfo.isFolder = false;
+    }
+
+
+
+    const filePath = path.join(__dirname, '../upload/' + projectInfo.project_name);
+    // 组装成绝对路径
+    const fileResource = filePath + `/${file.name}`;
+
+    const haveFile = await FileUtil.selectFileName(file.name, projectInfo.project_name)
+    if (haveFile) {
+      ctx.status = 500;
+      ctx.body = {
+        code: 0,
+        message: '当前文件已存在'
+      };
+      return false;
+    }
+    // 判断 /static/upload 文件夹是否存在，如果不在的话就创建一个
+    if (!fs.existsSync(filePath)) {
+
+      // 利用promise对象解决fs.mkdir的异步问题，创建目录
+      await new Promise((resolve, reject) => {
+        fs.mkdir(filePath, async (err: any) => {
+          if (err) {
+            throw new FileException();
+          } else {
+            /*
+            使用 createWriteStream 写入数据，然后使用管道流pipe拼接
+            */
+            const writeStream = fs.createWriteStream(fileResource);
+            fileReader.pipe(writeStream);
+            await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, file.name, projectInfo.project_name, ctx.state.user.id, projectInfo.isFolder)
+            ctx.status = 200;
+            ctx.body = {
+              code: 0,
+              message: '上传成功'
+            };
+            resolve(true);
+          }
+        });
+      })
+    } else {
+      /*
+      使用 createWriteStream 写入数据，然后使用管道流pipe拼接
+      */
+      const writeStream = fs.createWriteStream(fileResource);
+      fileReader.pipe(writeStream);
+      await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, file.name, projectInfo.project_name, ctx.state.user.id, projectInfo.isFolder)
+      ctx.status = 200;
+      ctx.body = {
+        code: 0,
+        message: '上传成功'
+      };
     }
   }
 

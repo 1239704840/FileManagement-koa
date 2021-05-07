@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-02-28 22:22:33
- * @LastEditTime: 2021-04-19 11:26:18
+ * @LastEditTime: 2021-05-07 13:51:57
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \koa-quickstart\src\routes.ts
@@ -59,6 +59,7 @@ unprotectedRouter.get('/file/downloadFile', FileController.downLoadFile)
 protectedRouter.post('/file/renameFile', FileController.renameFile)
 protectedRouter.post('/file/moveFile', FileController.moveFile)
 protectedRouter.post('/file/uploadFolder',FileController.uploadFolder)//新建文件夹
+protectedRouter.post('/file/uploadFolder2',FileController.uploadFolder2)//上传文件夹
 protectedRouter.post('/file/selectFileTree',FileController.selectFileTree)//查询文件树
 protectedRouter.post('/file/selectFileTreeByID',FileController.selectFileTreeByID)//查询文件树
 
