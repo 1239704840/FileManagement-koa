@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-02-28 22:22:34
- * @LastEditTime: 2021-04-13 15:00:24
+ * @LastEditTime: 2021-05-07 23:55:05
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \koa-quickstart\src\util\components\file.ts
@@ -33,7 +33,6 @@ export default class FileUtil {
       newFile.isFolder = isFolder;
 
       const file = await fileRepository.save(newFile);
-
       return file
 
     } catch (error) {

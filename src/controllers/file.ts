@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-02-28 22:22:33
- * @LastEditTime: 2021-05-07 21:01:37
+ * @LastEditTime: 2021-05-08 09:40:49
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \koa-quickstart\src\controllers\file.ts
@@ -212,76 +212,57 @@ export default class FileController {
     // 读取文件流
     const fileReader = fs.createReadStream(file.path);
     let strs: string[] = file.name.split("/");
-    for (var _i = 0; _i < strs.length; _i++) {
-      //分割后前几部分判断是否有此文件夹，如果没有则在数据库里面创建
-      if (_i < strs.length - 1) {
-        //非最后一位则为文件夹，生成
-        
-      } else {//最后一位，为文件，则修改文件名并上传文件
-        file.name = strs[_i];
 
-      }
-    }
-    //生成实体
+    //生成实体,此文件夹假设是一级目录并存在文件
     const projectInfo: ProjectInfo = ctx.request.body
     if (projectInfo.pid === undefined) {
       projectInfo.pid = "0";
     }
     if (projectInfo.isFolder === undefined) {
-      projectInfo.isFolder = false;
+      projectInfo.isFolder = true;
     }
 
+    for (let _i = 0; _i < strs.length; _i++) {
+      //分割后前几部分判断是否有此文件夹，如果没有则在数据库里面创建
+      if (_i < strs.length - 1) {
+        //非最后一位则为文件夹，生成
+        let haveFile = await FileUtil.selectFileName(strs[_i], projectInfo.project_name)
+        //console.log(haveFile)
+        if (!haveFile) { //如果不存在文件夹，则创建
+          let pro = await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, strs[_i], projectInfo.project_name, ctx.state.user.id, projectInfo.isFolder);
+          //console.log(pro);
+          projectInfo.pid = pro.id;
+        }
 
+      } else {//最后一位，为文件，则修改文件名并上传文件
 
-    const filePath = path.join(__dirname, '../upload/' + projectInfo.project_name);
-    // 组装成绝对路径
-    const fileResource = filePath + `/${file.name}`;
+        let haveFile = await FileUtil.selectFileName(file.name, projectInfo.project_name)
+        if (haveFile) {
+          ctx.status = 500;
+          ctx.body = {
+            code: 0,
+            message: '当前文件已存在'
+          };
+          return false;
+        }
+        file.name = strs[_i];
 
-    const haveFile = await FileUtil.selectFileName(file.name, projectInfo.project_name)
-    if (haveFile) {
-      ctx.status = 500;
-      ctx.body = {
-        code: 0,
-        message: '当前文件已存在'
-      };
-      return false;
-    }
-    // 判断 /static/upload 文件夹是否存在，如果不在的话就创建一个
-    if (!fs.existsSync(filePath)) {
-
-      // 利用promise对象解决fs.mkdir的异步问题，创建目录
-      await new Promise((resolve, reject) => {
-        fs.mkdir(filePath, async (err: any) => {
-          if (err) {
-            throw new FileException();
-          } else {
-            /*
-            使用 createWriteStream 写入数据，然后使用管道流pipe拼接
-            */
-            const writeStream = fs.createWriteStream(fileResource);
-            fileReader.pipe(writeStream);
-            await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, file.name, projectInfo.project_name, ctx.state.user.id, projectInfo.isFolder)
-            ctx.status = 200;
-            ctx.body = {
-              code: 0,
-              message: '上传成功'
-            };
-            resolve(true);
-          }
-        });
-      })
-    } else {
-      /*
-      使用 createWriteStream 写入数据，然后使用管道流pipe拼接
-      */
-      const writeStream = fs.createWriteStream(fileResource);
-      fileReader.pipe(writeStream);
-      await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, file.name, projectInfo.project_name, ctx.state.user.id, projectInfo.isFolder)
-      ctx.status = 200;
-      ctx.body = {
-        code: 0,
-        message: '上传成功'
-      };
+        //上传文件
+        let filePath = path.join(__dirname, '../upload/' + projectInfo.project_name);
+        // 组装成绝对路径
+        let fileResource = filePath + `/${file.name}`;
+        /*
+     使用 createWriteStream 写入数据，然后使用管道流pipe拼接
+     */
+        let writeStream = fs.createWriteStream(fileResource);
+        fileReader.pipe(writeStream);
+        await FileUtil.addFile(+projectInfo.id, +projectInfo.pid, file.name, projectInfo.project_name, ctx.state.user.id, !projectInfo.isFolder)
+        ctx.status = 200;
+        ctx.body = {
+          code: 0,
+          message: '上传成功'
+        };
+      }
     }
   }
 
